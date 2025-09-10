@@ -12,7 +12,9 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.9" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.9" />
-    <PackageVersion Include="Newtonsoft.Json" Version="13.0.3"/> <!-- vulnerability override -->
+    <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
+    <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
+    <!-- vulnerability override -->
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="9.0.4" />
   </ItemGroup>
 </Project>

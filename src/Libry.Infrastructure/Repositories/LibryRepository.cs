@@ -1,6 +1,5 @@
-﻿using Libry.Domain.Dtos;
-using Libry.Domain.Entities;
-using Libry.Domain.Result;
+﻿using Libry.Domain;
+using Libry.Domain.Dtos;
 using Libry.Infrastructure.Mappers;
 using Libry.Infrastructure.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -9,84 +8,81 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Libry.Infrastructure.Repositories;
 
-public sealed class LibryRepository(
-    DbContext dbContext,
-    ILogger<ILibryRepository> logger)
-    : ILibryRepository
+public sealed class LibryRepository(DbContext dbContext, ILogger<ILibryRepository> logger) : ILibryRepository
 {
     private readonly DbContext _dbContext = dbContext;
     private readonly ILogger<ILibryRepository> _logger = logger;
 
     // Authors
-    public async Task<Result<List<AuthorDto>>> GetAllAuthorsAsync(Guid pageFrom, int pageSize)
+    public async Task<Result<List<Author>>> GetAllAuthorsAsync(Guid pageFromId, int pageSize)
     {
         var authors = await _dbContext.Authors
-            .Where(a => a.Id.CompareTo(pageFrom) > 0)
+            .Where(a => a.Id.CompareTo(pageFromId) > 0)
             .Take(pageSize)
             .IgnoreAutoIncludes()
             .AsNoTracking()
             .ToListAsync();
 
         return authors.IsNullOrEmpty()
-            ? Result<List<AuthorDto>>.Failure(Errors.NotFound)
-            : Result<List<AuthorDto>>.Success(authors.MapToDto());
+            ? Result<List<Author>>.Failure(Errors.NotFound)
+            : Result<List<Author>>.Success(authors.MapToDto());
     }
 
-    public async Task<Result<AuthorDto>> GetAuthorByIdAsync(Guid fromId)
+    public async Task<Result<Author>> GetAuthorByIdAsync(Guid authorId)
     {
         var author = await _dbContext.Authors
-            .Where(a => a.Id == fromId)
+            .Where(a => a.Id == authorId)
             .IgnoreAutoIncludes()
             .AsNoTracking()
             .FirstOrDefaultAsync();
 
         return author is null
-           ? Result<AuthorDto>.Failure(Errors.NotFound)
-           : Result<AuthorDto>.Success(author.MapToDto());
+           ? Result<Author>.Failure(Errors.NotFound)
+           : Result<Author>.Success(author.MapToDto());
     }
 
-    public async Task<Result<List<BookDto>>> GetAuthorBooksAsync(Guid bookId)
+    public async Task<Result<List<Book>>> GetAuthorBooksAsync(Guid authorId)
     {
         var books = await _dbContext.Books
-            .Where(b => b.Authors.Select(b => b.Id).Contains(bookId))
+            .Where(b => b.Authors.Select(b => b.Id).Contains(authorId))
             .IgnoreAutoIncludes()
             .AsNoTracking()
             .ToListAsync();
 
         return books.IsNullOrEmpty()
-            ? Result<List<BookDto>>.Failure(Errors.NotFound)
-            : Result<List<BookDto>>.Success(books.MapToDto());
+            ? Result<List<Book>>.Failure(Errors.NotFound)
+            : Result<List<Book>>.Success(books.MapToDto());
     }
 
     // Books
-    public async Task<Result<List<BookDto>>> GetAllBooksAsync(Guid fromId, int pageSize)
+    public async Task<Result<List<Book>>> GetAllBooksAsync(Guid pageFromId, int pageSize)
     {
         var books = await _dbContext.Books
-            .Where(b => b.Id.CompareTo(fromId) > 0)
+            .Where(b => b.Id.CompareTo(pageFromId) > 0)
             .Take(pageSize)
             .IgnoreAutoIncludes()
             .AsNoTracking()
             .ToListAsync();
 
         return books.IsNullOrEmpty()
-            ? Result<List<BookDto>>.Failure(Errors.NotFound)
-            : Result<List<BookDto>>.Success(books.MapToDto());
+            ? Result<List<Book>>.Failure(Errors.NotFound)
+            : Result<List<Book>>.Success(books.MapToDto());
     }
 
-    public async Task<Result<BookDto>> GetBookByIdAsync(Guid id)
+    public async Task<Result<Book>> GetBookByIdAsync(Guid bookId)
     {
         var book = await _dbContext.Books
-            .Where(b => b.Id.Equals(id))
+            .Where(b => b.Id.Equals(bookId))
             .IgnoreAutoIncludes()
             .AsNoTracking()
             .SingleOrDefaultAsync();
 
         return book is null
-            ? Result<BookDto>.Failure(Errors.NotFound)
-            : Result<BookDto>.Success(book.MapToDto());
+            ? Result<Book>.Failure(Errors.NotFound)
+            : Result<Book>.Success(book.MapToDto());
     }
 
-    public async Task<Result<List<AuthorDto>>> GetBookAuthorsAsync(Guid bookId)
+    public async Task<Result<List<Author>>> GetBookAuthorsAsync(Guid bookId)
     {
         var authors = await _dbContext.Authors
             .Where(a => a.Books.Select(b => b.Id).Contains(bookId))
@@ -95,16 +91,17 @@ public sealed class LibryRepository(
             .ToListAsync();
 
         return authors.IsNullOrEmpty()
-            ? Result<List<AuthorDto>>.Failure(Errors.NotFound)
-            : Result<List<AuthorDto>>.Success(authors.MapToDto());
+            ? Result<List<Author>>.Failure(Errors.NotFound)
+            : Result<List<Author>>.Success(authors.MapToDto());
     }
 
-    public async Task<Result<BookDto>> AddBookAsync(AddBookDto book)
+    public async Task<Result<Book>> AddBookAsync(Book book)
     {
-        var entity = new Book();
+        var entity = new Domain.Entities.Book();
+
         try
         {
-            var library = await _dbContext.Libraries.FirstOrDefaultAsync();
+            var library = await _dbContext.Libraries.FirstAsync();
 
             entity.Id = Guid.NewGuid();
             entity.DatePublished = book.DatePublished;
@@ -118,24 +115,24 @@ public sealed class LibryRepository(
         catch (Exception ex)
         {
             _logger.LogError(ex, "{message}", ex.Message);
-            return Result<BookDto>.Failure(Errors.InternalServerError);
+            return Result<Book>.Failure(Errors.InternalServerError);
         }
 
-        return Result<BookDto>.Success(entity.MapToDto());
+        return Result<Book>.Success(entity.MapToDto());
     }
 
     // Libraries
-    public async Task<Result<List<LibraryDto>>> GetAllLibrariesAsync(Guid fromId, int pageSize)
+    public async Task<Result<List<Library>>> GetAllLibrariesAsync(Guid pageFromId, int pageSize)
     {
         var libraries = await _dbContext.Libraries
-            .Where(b => b.Id.CompareTo(fromId) > 0)
+            .Where(b => b.Id.CompareTo(pageFromId) > 0)
             .Take(pageSize)
             .IgnoreAutoIncludes()
             .AsNoTracking()
             .ToListAsync();
 
         return libraries.IsNullOrEmpty()
-            ? Result<List<LibraryDto>>.Failure(Errors.NotFound)
-            : Result<List<LibraryDto>>.Success(libraries.MapToDto());
+            ? Result<List<Library>>.Failure(Errors.NotFound)
+            : Result<List<Library>>.Success(libraries.MapToDto());
     }
 }

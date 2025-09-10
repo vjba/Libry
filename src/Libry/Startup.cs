@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Reflection;
+using System.Text;
 using System.Threading.RateLimiting;
 using Libry.Infrastructure;
 using Libry.Infrastructure.Repositories;
@@ -49,6 +50,8 @@ public static class Startup
                 });
         });
 
+        builder.Services.AddProblemDetails();
+
         builder.Services.AddSwaggerGen(options =>
         {
             options.SwaggerDoc("v1", new OpenApiInfo
@@ -63,6 +66,10 @@ public static class Startup
                     Url = new Uri("https://example.com/license")
                 }
             });
+
+            //options.IncludeXmlComments(Assembly.GetExecutingAssembly());
+            options.IgnoreObsoleteActions();
+            options.IgnoreObsoleteProperties();
         });
 
         builder.Services.AddRateLimiter(opt =>
@@ -98,10 +105,15 @@ public static class Startup
                 opt.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
             });
             app.MapSwagger().CacheOutput();
+
+            app.UseDeveloperExceptionPage();
         }
 
         app.UseAuthentication();
         app.UseAuthorization();
+
+        app.UseExceptionHandler();
+        app.UseStatusCodePages();
 
         app.MapControllers();
     }

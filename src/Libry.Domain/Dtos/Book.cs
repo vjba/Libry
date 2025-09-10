@@ -1,6 +1,6 @@
 ﻿namespace Libry.Domain.Dtos;
 
-public sealed record BookDto : BaseDto
+public sealed record Book : Base
 {
     public string Title { get; set; } = string.Empty;
     public int NumberOfPages { get; set; }

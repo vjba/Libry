@@ -8,4 +8,5 @@ public static class Constants
 public static class Defaults
 {
     public const int PageSize = 25;
+    public const string CacheProfileName = "Default";
 }

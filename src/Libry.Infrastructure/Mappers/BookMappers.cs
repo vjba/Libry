@@ -1,18 +1,18 @@
-﻿using Libry.Domain.Dtos;
-using Libry.Domain.Entities;
+﻿using Dtos = Libry.Domain.Dtos;
+using Entities = Libry.Domain.Entities;
 
 namespace Libry.Infrastructure.Mappers;
 
 public static class BookMappers
 {
-    public static List<BookDto> MapToDto(this List<Book> books)
+    public static List<Dtos.Book> MapToDto(this List<Entities.Book> books)
     {
         return [.. books.Select(b => b.MapToDto())];
     }
 
-    public static BookDto MapToDto(this Book book)
+    public static Dtos.Book MapToDto(this Entities.Book book)
     {
-        return new BookDto
+        return new Dtos.Book
         {
             Id = book.Id,
             Title = book.Title,

@@ -1,12 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Net;
 using System.Net.Mime;
+using Libry.Api.Attributes;
 using Libry.Domain.Dtos;
 using Libry.Infrastructure.Repositories.Interfaces;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using static Libry.Api.Constants;
 using static Libry.Api.Defaults;
 
 namespace Libry.Api.Controllers;
@@ -14,24 +12,20 @@ namespace Libry.Api.Controllers;
 [ApiController]
 [Route("[controller]")]
 [Produces(MediaTypeNames.Application.Json)]
-[ResponseCache(CacheProfileName = "Default")]
+[ResponseCache(CacheProfileName = CacheProfileName)]
 public sealed class BooksController(
-    ILibryRepository libryRepository,
-    ILogger<BooksController> logger)
+    ILibryRepository libryRepository)
     : ControllerBase
 {
     private readonly ILibryRepository _libryRepository = libryRepository;
-    private readonly ILogger<BooksController> _logger = logger;
 
     [HttpGet]
-    [ProducesResponseType(typeof(List<BookDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(NotFoundResult), (int)HttpStatusCode.NotFound)]
-    [ProducesResponseType(typeof(BadRequestResult), (int)HttpStatusCode.BadRequest)]
-    public async Task<ActionResult<List<BookDto>>> GetAllAsync(Guid fromId, [Range(1, 1000)] int pageSize = PageSize)
+    [ProducesResponseType(typeof(List<Book>), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(404)]
+    public async Task<ActionResult<List<Book>>> GetAllAsync(Guid pageFromId, [Range(1, 1000)] int pageSize = PageSize)
     {
-        _logger.LogInformation("{method} called.", nameof(GetAllAsync));
-
-        var results = await _libryRepository.GetAllBooksAsync(fromId, pageSize);
+        var results = await _libryRepository.GetAllBooksAsync(pageFromId, pageSize);
 
         return results.IsSuccess
             ? Ok(results.Data)
@@ -39,18 +33,11 @@ public sealed class BooksController(
     }
 
     [HttpGet("{bookId}")]
-    [ProducesResponseType(typeof(BookDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(NotFoundResult), (int)HttpStatusCode.NotFound)]
-    [ProducesResponseType(typeof(BadRequestResult), (int)HttpStatusCode.BadRequest)]
-    public async Task<ActionResult<BookDto>> GetById(Guid bookId)
+    [ProducesResponseType(typeof(Book), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(404)]
+    public async Task<ActionResult<Book>> GetById([Required] Guid bookId)
     {
-        _logger.LogInformation("{method} called.", nameof(GetById));
-
-        if (bookId == Guid.Empty)
-        {
-            return BadRequest(EmptyGuidMessage);
-        }
-
         var result = await _libryRepository.GetBookByIdAsync(bookId);
 
         return result.IsSuccess
@@ -59,18 +46,11 @@ public sealed class BooksController(
     }
 
     [HttpGet("{bookId}/Authors")]
-    [ProducesResponseType(typeof(BookDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(NotFoundResult), (int)HttpStatusCode.NotFound)]
-    [ProducesResponseType(typeof(BadRequestResult), (int)HttpStatusCode.BadRequest)]
-    public async Task<ActionResult<BookDto>> GetBookAuthorsAsync(Guid bookId)
+    [ProducesResponseType(typeof(Book), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(404)]
+    public async Task<ActionResult<Book>> GetBookAuthorsAsync([Required] Guid bookId)
     {
-        _logger.LogInformation("{method} called.", nameof(GetBookAuthorsAsync));
-
-        if (bookId == Guid.Empty)
-        {
-            return BadRequest(EmptyGuidMessage);
-        }
-
         var result = await _libryRepository.GetBookAuthorsAsync(bookId);
 
         return result.IsSuccess
@@ -80,21 +60,15 @@ public sealed class BooksController(
 
     [HttpPost]
     [ResponseCache(NoStore = true)]
-    [ProducesResponseType(typeof(BookDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(BadRequestResult), (int)HttpStatusCode.BadRequest)]
-    public async Task<ActionResult<BookDto>> AddAsync(AddBookDto book)
+    [ValidateModel]
+    [ProducesResponseType(typeof(Book), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(404)]
+    public async Task<ActionResult<Book>> AddAsync(Book book)
     {
-        _logger.LogInformation("{method} called.", nameof(AddAsync));
-
-        if (!ModelState.IsValid)
-        {
-            _logger.LogInformation("Bad request POSTed to {method}.", nameof(AddAsync));
-            return BadRequest(ModelState);
-        }
-
         var result = await _libryRepository.AddBookAsync(book);
 
-        Response.Headers.Add("location", new Uri($"{Request.Host + Request.Path + "/" + result.Data.Id}").ToString());
+        Response.Headers.Add("location", new Uri($"{Request.GetEncodedUrl()}/{result.Data.Id}").ToString());
 
         return result.IsSuccess
             ? Ok(result.Data)

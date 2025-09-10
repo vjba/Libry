@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Net;
 using System.Net.Mime;
 using Libry.Domain.Dtos;
 using Libry.Infrastructure.Repositories.Interfaces;
@@ -12,21 +11,22 @@ namespace Libry.Api.Controllers;
 [ApiController]
 [Route("[controller]")]
 [Produces(MediaTypeNames.Application.Json)]
-[ResponseCache(CacheProfileName = "Default")]
+[ResponseCache(CacheProfileName = CacheProfileName)]
 public sealed class LibrariesController(
     ILibryRepository libryRepository,
-    ILogger<LibrariesController> logger) : ControllerBase
+    ILogger<LibrariesController> logger)
+    : ControllerBase
 {
     private readonly ILibryRepository _libryRepository = libryRepository;
     private readonly ILogger<LibrariesController> _logger = logger;
 
     [HttpGet]
-    [ProducesResponseType(typeof(LibraryDto), (int)HttpStatusCode.OK)]
-    public async Task<ActionResult<List<LibraryDto>>> GetAllAsync(Guid fromId, [Range(1, 1000)] int pageSize = PageSize)
+    [ProducesResponseType(typeof(Library), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(404)]
+    public async Task<ActionResult<List<Library>>> GetAllAsync(Guid pageFromId, [Range(1, 1000)] int pageSize = PageSize)
     {
-        _logger.LogInformation("{method} called.", nameof(GetAllAsync));
-
-        var results = await _libryRepository.GetAllLibrariesAsync(fromId, pageSize);
+        var results = await _libryRepository.GetAllLibrariesAsync(pageFromId, pageSize);
 
         return results.IsSuccess
             ? Ok(results.Data)

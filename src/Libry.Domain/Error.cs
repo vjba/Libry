@@ -1,6 +1,6 @@
 ﻿using System.Net;
 
-namespace Libry.Domain.Result;
+namespace Libry.Domain;
 
 public sealed record Error(HttpStatusCode HttpStatusCode, string Description)
 {

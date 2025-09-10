@@ -1,13 +1,13 @@
-﻿namespace Libry.Domain.Result;
+﻿namespace Libry.Domain;
 
-public class Result<TDto> where TDto : class
+public class Result<TData> where TData : class
 {
     public bool IsSuccess { get; }
     public bool IsFailure => !IsSuccess;
     public Error Error { get; }
-    public TDto Data { get; }
+    public TData Data { get; }
 
-    private Result(bool isSuccess, Error error, TDto data)
+    private Result(bool isSuccess, Error error, TData data)
     {
         if (isSuccess && error != Error.None
             || !isSuccess && error == Error.None)
@@ -20,7 +20,7 @@ public class Result<TDto> where TDto : class
         Data = data;
     }
 
-    public static Result<TDto> Success(TDto data) => new(true, Error.None, data);
+    public static Result<TData> Success(TData data) => new(true, Error.None, data);
 
-    public static Result<TDto> Failure(Error error) => new(false, error, null!);
+    public static Result<TData> Failure(Error error) => new(false, error, null!);
 }
